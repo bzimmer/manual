@@ -1,0 +1,41 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  CWD:
+    sh: git rev-parse --show-toplevel
+  DIST:
+    "{{.CWD}}/dist"
+
+tasks:
+  default:
+    cmds:
+      - task: test
+
+  test:
+    desc: Run tests
+    cmds:
+      - mkdir -p {{.DIST}}
+      - go test -count=1 -race -covermode atomic -coverprofile {{.DIST}}/coverage.txt ./...
+
+  cover:
+    desc: Visualize test coverage
+    deps: [test]
+    cmds:
+      - go tool cover -html={{.DIST}}/coverage.txt
+
+  clean:
+    desc: Remove artifacts
+    cmds:
+      - rm -rf {{.DIST}}
+
+  snapshot:
+    desc: Build a snapshot
+    cmds:
+      - goreleaser release --snapshot --rm-dist
+
+  lint:
+    desc: Runs lint
+    cmds:
+      - golangci-lint -v run
