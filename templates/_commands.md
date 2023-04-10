@@ -1,4 +1,4 @@
-# {{ .Name }} - {{ .Description }}
+# Commands
 
 {{ printf "_%s" .Name | partial }}
 
@@ -6,7 +6,7 @@
 |Name|Aliases|Description|
 |-|-|-|
 {{- range $f := .GlobalFlags }}
-|```{{ $f.Name }}```|{{ if names $f }}```{{ names $f }}```{{ end }}|{{ description $f }}|
+|{{ $f.Name }}|{{ if names $f }}{{ names $f }}{{ end }}|{{ description $f }}|
 {{- end }}
 
 ## Commands
@@ -17,13 +17,14 @@
 
 {{- range .Commands }}
 
-## *{{ fullname . " " }}*
+### *{{ fullname . " " }}*
 
 **Description**
 
 {{ if .Cmd.Description }}{{ .Cmd.Description }}{{ else }}{{ .Cmd.Usage }}{{ end }}
 
 {{ if .Cmd.Action }}
+
 **Syntax**
 
 ```sh
@@ -41,7 +42,7 @@ $ {{ $.Name }} {{ fullname . " " }} [flags] {{- if .Cmd.ArgsUsage }} {{.Cmd.Args
 |Name|Aliases|EnvVars|Description|
 |-|-|-|-|
 {{- range $f := . }}
-|```{{ $f.Name }}```|{{ if names $f }}```{{ names $f }}```{{ end }}|{{ if envvars $f }}```{{ envvars $f }}```{{ end }}|{{ description $f }}|
+|{{ $f.Name }}|{{ if names $f }}{{ names $f }}{{ end }}|{{ if envvars $f }}{{ envvars $f }}{{ end }}|{{ description $f }}|
 {{- end }}
 {{- end }}
 
