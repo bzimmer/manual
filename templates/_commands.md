@@ -3,10 +3,10 @@
 {{ printf "_%s" .Name | partial }}
 
 ## Global Flags
-|Name|Aliases|Description|
-|-|-|-|
+|Name|Aliases|EnvVars|Description|
+|-|-|-|-|
 {{- range $f := .GlobalFlags }}
-|{{ $f.Name }}|{{ if names $f }}{{ names $f }}{{ end }}|{{ description $f }}|
+|{{ $f.Name }}|{{ if names $f }}{{ names $f }}{{ end }}|{{ if envvars $f }}{{ envvars $f }}{{ end }}|{{ description $f }}|
 {{- end }}
 
 ## Commands
