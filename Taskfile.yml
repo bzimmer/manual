@@ -3,10 +3,8 @@
 version: '3'
 
 vars:
-  CWD:
-    sh: git rev-parse --show-toplevel
   DIST:
-    "{{.CWD}}/dist"
+    "{{.ROOT_DIR}}/dist"
 
 tasks:
   default:
@@ -33,9 +31,10 @@ tasks:
   snapshot:
     desc: Build a snapshot
     cmds:
-      - goreleaser release --snapshot --rm-dist
+      - goreleaser release --snapshot --clean
 
   lint:
     desc: Runs lint
     cmds:
       - golangci-lint -v run
+      - typos
