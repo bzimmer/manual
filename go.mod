@@ -1,6 +1,6 @@
 module github.com/bzimmer/manual
 
-go 1.17
+go 1.20
 
 require (
 	github.com/stretchr/testify v1.7.0
