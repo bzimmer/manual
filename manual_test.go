@@ -3,6 +3,7 @@ package manual_test
 import (
 	"bytes"
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,6 +72,8 @@ func NewTestApp(t *testing.T, name string, cmd *cli.Command) *cli.App {
 func TestManual(t *testing.T) {
 	a := assert.New(t)
 
+	dir := t.TempDir()
+
 	tests := []*Harness{
 		{
 			Name: "manual",
@@ -83,6 +86,19 @@ func TestManual(t *testing.T) {
 				s := c.App.Writer.(*bytes.Buffer).String()
 				a.Greater(len(s), 0)
 				a.Contains(s, "manual")
+				return nil
+			},
+		},
+		{
+			Name: "manual with output path",
+			Args: []string{"demo", "manual", "-o", filepath.Join(dir, "output.md"), "templates/"},
+			Before: func(c *cli.Context) error {
+				c.App.Writer = &bytes.Buffer{}
+				return nil
+			},
+			After: func(c *cli.Context) error {
+				s := c.App.Writer.(*bytes.Buffer).String()
+				a.Equal(len(s), 0)
 				return nil
 			},
 		},
