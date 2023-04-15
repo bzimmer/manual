@@ -1,7 +1,6 @@
 package manual
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"io"
@@ -15,7 +14,7 @@ import (
 )
 
 //go:embed templates/_commands.md
-var content embed.FS //nolint: gochecknoglobals
+var content embed.FS
 
 func envvars(flags []cli.Flag) []string {
 	vars := make(map[string]bool)
@@ -110,7 +109,8 @@ func commandsTemplate(paths []string) (*template.Template, error) {
 	return template.New("commands").
 		Funcs(map[string]interface{}{
 			"partial": func(fn string) (string, error) {
-				usage, err := read(fn+".md", paths)
+				var usage string
+				usage, err = read(fn+".md", paths)
 				if err != nil {
 					if os.IsNotExist(err) {
 						// ok to skip any commands without usage documentation
@@ -168,25 +168,74 @@ func Manual() *cli.Command {
 		Usage:   "Generate the user manual",
 		Aliases: []string{"man"},
 		Hidden:  true,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "Write the output to the specified file rather than stdout",
+			},
+		},
 		Action: func(c *cli.Context) error {
-			var buffer bytes.Buffer
+			fp := c.App.Writer
+			if c.IsSet("output") {
+				out, err := os.Create(c.String("output"))
+				if err != nil {
+					return err
+				}
+				defer out.Close()
+				fp = out
+			}
 			commands := lineate(c.App.Commands, nil)
 			t, err := commandsTemplate(c.Args().Slice())
 			if err != nil {
 				return err
 			}
-			if err := t.Execute(&buffer, map[string]interface{}{
+			return t.Execute(fp, map[string]interface{}{
 				"Name":        c.App.Name,
 				"Description": c.App.Description,
 				"GlobalFlags": c.App.Flags,
 				"Commands":    commands,
-			}); err != nil {
-				return err
-			}
-			fmt.Fprint(c.App.Writer, buffer.String())
-			return nil
+			})
 		},
 	}
+}
+
+func commands(c *cli.Context) error {
+	cmd := c.App.Name
+	if c.Bool("relative") {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		cmd, err = os.Executable()
+		if err != nil {
+			return err
+		}
+		cmd, err = filepath.Rel(cwd, cmd)
+		if err != nil {
+			return err
+		}
+		cmd, err = filepath.Abs(cmd)
+		if err != nil {
+			return err
+		}
+	}
+	desc := c.Bool("description")
+	for _, m := range lineate(c.App.Commands, nil) {
+		switch {
+		case m.Cmd.Action == nil:
+			continue
+		case desc:
+			for _, x := range []string{m.Cmd.Description, m.Cmd.Usage} {
+				if x != "" {
+					fmt.Fprintln(c.App.Writer, "#", x)
+					break
+				}
+			}
+		}
+		fmt.Fprintln(c.App.Writer, cmd+" "+m.fullname(" "))
+	}
+	return nil
 }
 
 func Commands() *cli.Command {
@@ -204,43 +253,13 @@ func Commands() *cli.Command {
 				Aliases: []string{"r"},
 				Usage:   "Specify the command relative to the current working directory",
 			},
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "Write the output to the specified file rather than stdout",
+			},
 		},
-		Action: func(c *cli.Context) error {
-			cmd := c.App.Name
-			if c.Bool("relative") {
-				cwd, err := os.Getwd()
-				if err != nil {
-					return err
-				}
-				cmd, err = os.Executable()
-				if err != nil {
-					return err
-				}
-				cmd, err = filepath.Rel(cwd, cmd)
-				if err != nil {
-					return err
-				}
-				cmd, err = filepath.Abs(cmd)
-				if err != nil {
-					return err
-				}
-			}
-			desc := c.Bool("description")
-			for _, m := range lineate(c.App.Commands, nil) {
-				if m.Cmd.Action != nil {
-					if desc {
-						for _, x := range []string{m.Cmd.Description, m.Cmd.Usage} {
-							if x != "" {
-								fmt.Fprintln(c.App.Writer, "#", x)
-								break
-							}
-						}
-					}
-					fmt.Fprintln(c.App.Writer, cmd+" "+m.fullname(" "))
-				}
-			}
-			return nil
-		},
+		Action: commands,
 	}
 }
 
