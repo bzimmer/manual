@@ -1,40 +1,16 @@
-# https://taskfile.dev
-
 version: '3'
 
-vars:
-  DIST:
-    "{{.ROOT_DIR}}/dist"
+includes:
+  build: ./Taskfile-build.yml
+
+dotenv: [".clean.env"]
 
 tasks:
   default:
     cmds:
-      - task: test
+      - task -l
 
   test:
-    desc: Run tests
+    desc: Run all tests
     cmds:
-      - mkdir -p {{.DIST}}
-      - go test -count=1 -race -covermode atomic -coverprofile {{.DIST}}/coverage.txt ./...
-
-  cover:
-    desc: Visualize test coverage
-    deps: [test]
-    cmds:
-      - go tool cover -html={{.DIST}}/coverage.txt
-
-  clean:
-    desc: Remove artifacts
-    cmds:
-      - rm -rf {{.DIST}}
-
-  snapshot:
-    desc: Build a snapshot
-    cmds:
-      - goreleaser release --snapshot --clean
-
-  lint:
-    desc: Runs lint
-    cmds:
-      - golangci-lint -v run
-      - typos
+      - task: build:test
